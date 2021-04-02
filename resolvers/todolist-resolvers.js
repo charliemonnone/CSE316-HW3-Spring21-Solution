@@ -47,7 +47,7 @@ module.exports = {
 			
 			const updated = await Todolist.updateOne({_id: listId}, { items: listItems });
 
-			if(updated) return (objectId);
+			if(updated) return (item._id)
 			else return ('Could not add item');
 		},
 		/** 
@@ -66,7 +66,7 @@ module.exports = {
 				items: items
 			});
 			const updated = newList.save();
-			if(updated) return objectId;
+			if(updated) return newList;
 			else return ('Could not add todolist');
 		},
 		/** 
