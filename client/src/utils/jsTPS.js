@@ -60,14 +60,12 @@ export class EditItem_Transaction extends jsTPS_Transaction {
 	}	
 
 	async doTransaction() {
-        console.log('do:' ,this.prev, this.update)
 		const { data } = await this.updateFunction({ 
 				variables:{  itemId: this.itemID, _id: this.listID, 
 							 field: this.field, value: this.update, 
 							 flag: this.flag 
 						  }
 			});
-        if(data) console.log(data)
 		return data;
     }
 
@@ -182,7 +180,7 @@ export class jsTPS {
         // AND NOW ADD THE TRANSACTION
         this.transactions.push(transaction);
         // AND EXECUTE IT
-        this.doTransaction();        
+        // this.doTransaction();        
     }
 
     /**
@@ -192,7 +190,8 @@ export class jsTPS {
      */
      async doTransaction() {
 		let retVal;
-        if (this.hasTransactionToRedo()) {   
+        if(this.isPerformingDo() || this.isPerformingUndo()) return;
+        if (this.hasTransactionToRedo() ) {   
             this.performingDo = true;
             let transaction = this.transactions[this.mostRecentTransaction+1];
 			retVal = await transaction.doTransaction();
@@ -203,6 +202,7 @@ export class jsTPS {
         console.log('transactions: ' + this.getSize());
         console.log('redo transactions:' + this.getRedoSize());
         console.log('undo transactions:' + this.getUndoSize());
+		console.log(this.mostRecentTransaction)
 		console.log(' ')
 		return retVal;
     }
@@ -243,6 +243,7 @@ export class jsTPS {
      */
      async undoTransaction() {
 		let retVal;
+        if(this.isPerformingDo() || this.isPerformingUndo()) return;
         if (this.hasTransactionToUndo()) {
             this.performingUndo = true;
             let transaction = this.transactions[this.mostRecentTransaction];
@@ -253,6 +254,7 @@ export class jsTPS {
         console.log('transactions: ' + this.getSize());
         console.log('redo transactions:' + this.getRedoSize());
         console.log('undo transactions:' + this.getUndoSize());
+		console.log(this.mostRecentTransaction)
         console.log(' ')
 		return(retVal);
     }

@@ -76,7 +76,9 @@ html, body {
 }
 
 .list-item-active {
-    background-color: var(--deep-blue);
+    color: $primary-color;
+    font-weight: bold;
+
 }
 
 .list-item {
@@ -100,8 +102,19 @@ html, body {
     font-size: 14px;
 }
 
+.nothing-msg {
+    color: $primary-color;
+}
+
 .sidebar-header {
     border-bottom: 2px dotted;
+}
+
+.sidebar-buttons-disabled {
+    cursor: default;
+    transition: 0.1s ease-in-out;
+    color: var(--warm-black);
+    background-color: #40454e;
 }
 
 .sidebar-header-name {
@@ -205,4 +218,9 @@ html, body {
 
 .table-entry-buttons {
     color: $text-color;
+}
+
+.table-entry-buttons-disabled {
+    color: var(--warm-black);
+    cursor: default;
 }

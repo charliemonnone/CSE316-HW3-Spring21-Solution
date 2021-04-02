@@ -4,7 +4,6 @@ import { WNavItem, WInput } from 'wt-frontend';
 const SidebarEntry = (props) => {
     const [editing, toggleEditing] = useState(false);
     const [preEdit, setPreEdit] = useState(props.name);
-
     const handleEditing = (e) => {
         e.stopPropagation();
         setPreEdit(props.name);
@@ -17,18 +16,21 @@ const SidebarEntry = (props) => {
         props.updateListField(props._id, name, value, preEdit);
     };
 
-    const entryStyle = props.id === props.activeid ? 'list-item list-item-active' : 'list-item ';
+    const entryStyle = props._id === props.activeid ? 'list-item-active' : 'list-item ';
     
     return (
         <WNavItem 
             className={entryStyle} onDoubleClick={handleEditing} 
-            onClick={() => { props.handleSetActive(props.id) }} hoverAnimation="lighten"
+            onClick={() => { props.handleSetActive(props._id) }} hoverAnimation="lighten"
         >
             {
-                editing ? <WInput className="list-item-edit" inputClass="list-item-edit-input" wType="lined" barAnimation="solid" name='name' onBlur={handleSubmit} autoFocus={true} defaultValue={props.name} />
-                    :   <div className='list-text'>
-                            {props.name}
-                        </div>
+                editing ?   <WInput className="list-item-edit" inputClass="list-item-edit-input"
+                                onKeyDown={(e) => {if(e.keyCode === 13) handleSubmit(e)}}
+                                name='name' onBlur={handleSubmit} autoFocus={true} defaultValue={props.name} 
+                            />
+                        :   <div className='list-text'>
+                                {props.name}
+                            </div>
             }
         </WNavItem>
     );

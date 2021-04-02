@@ -1,13 +1,13 @@
-import React, { useState, useEffect } 	from 'react';
 import Logo 							from '../navbar/Logo';
-import NavbarOptions 					from '../navbar/NavbarOptions';
-import MainContents 					from '../main/MainContents';
-import SidebarContents 					from '../sidebar/SidebarContents';
 import Login 							from '../modals/Login';
 import Delete 							from '../modals/Delete';
+import MainContents 					from '../main/MainContents';
 import CreateAccount 					from '../modals/CreateAccount';
-import { GET_DB_TODOS } 				from '../../cache/queries';
+import NavbarOptions 					from '../navbar/NavbarOptions';
 import * as mutations 					from '../../cache/mutations';
+import SidebarContents 					from '../sidebar/SidebarContents';
+import { GET_DB_TODOS } 				from '../../cache/queries';
+import React, { useState } 				from 'react';
 import { useMutation, useQuery } 		from '@apollo/client';
 import { WNavbar, WSidebar, WNavItem } 	from 'wt-frontend';
 import { WLayout, WLHeader, WLMain, WLSide } from 'wt-frontend';
@@ -15,23 +15,53 @@ import { UpdateListField_Transaction,
 	UpdateListItems_Transaction, 
 	ReorderItems_Transaction, 
 	EditItem_Transaction } 				from '../../utils/jsTPS';
-import WInput from 'wt-frontend/build/components/winput/WInput';
 
 
 const Homescreen = (props) => {
-	// document.onkeydown = () => {console.log("ajkshdasd")}
-	let todolists 							= [];
+	const keyCombination = (e, callback) => {
+		if(e.key == 'z' && e.ctrlKey) {
+			if(props.tps.hasTransactionToUndo()) {
+				tpsUndo();
+			}
+		}
+		else if (e.key == 'y' && e.ctrlKey) { 
+			if(props.tps.hasTransactionToRedo()) {
+				tpsRedo();
+			}
+		}
+	}
+	document.onkeydown = keyCombination;
+	let todolists 	= [];
+	let SidebarData = [];
 	const [activeList, setActiveList] 		= useState({});
 	const [showDelete, toggleShowDelete] 	= useState(false);
 	const [showLogin, toggleShowLogin] 		= useState(false);
 	const [showCreate, toggleShowCreate] 	= useState(false);
+	const [canUndo, setCanUndo] = useState(props.tps.hasTransactionToUndo());
+	const [canRedo, setCanRedo] = useState(props.tps.hasTransactionToRedo());
 
 	const { loading, error, data, refetch } = useQuery(GET_DB_TODOS);
+
 	if(loading) { console.log(loading, 'loading'); }
 	if(error) { console.log(error, 'error'); }
-	if(data) { todolists = data.getAllTodos; }
+	if(data) { 
+		// Assign todolists 
+		for(let todo of data.getAllTodos) {
+			todolists.push(todo)
+		}
+		// if a list is selected, shift it to front of todolists
+		if(activeList._id) {
+			let selectedListIndex = todolists.findIndex(entry => entry._id === activeList._id);
+			let removed = todolists.splice(selectedListIndex, 1);
+			todolists.unshift(removed[0]);
+		}
+		// create data for sidebar links
+		for(let todo of todolists) {
+			SidebarData.push({_id: todo._id, name: todo.name});
+		}
+	}
 
-	const reloadTodos = async () => {
+	const reloadList = async () => {
 		if (activeList._id) {
 			let tempID = activeList._id;
 			let list = todolists.find(list => list._id === tempID);
@@ -40,7 +70,9 @@ const Homescreen = (props) => {
 	}
 
 	const loadTodoList = (list) => {
-		props.tps.clearAllTransactions()
+		props.tps.clearAllTransactions();
+		setCanUndo(props.tps.hasTransactionToUndo());
+		setCanRedo(props.tps.hasTransactionToRedo());
 		setActiveList(list);
 
 	}
@@ -48,7 +80,7 @@ const Homescreen = (props) => {
 	const mutationOptions = {
 		refetchQueries: [{ query: GET_DB_TODOS }], 
 		awaitRefetchQueries: true,
-		onCompleted: () => reloadTodos()
+		onCompleted: () => reloadList()
 	}
 
 	const [ReorderTodoItems] 		= useMutation(mutations.REORDER_ITEMS, mutationOptions);
@@ -61,17 +93,24 @@ const Homescreen = (props) => {
 
 
 	const auth = props.user === null ? false : true;
-
 	
 
+
 	const tpsUndo = async () => {
-		await props.tps.undoTransaction();
+		const ret = await props.tps.undoTransaction();
+		if(ret) {
+			setCanUndo(props.tps.hasTransactionToUndo());
+			setCanRedo(props.tps.hasTransactionToRedo());
+		}
 	}
 
 	const tpsRedo = async () => {
-		await props.tps.doTransaction();
+		const ret = await props.tps.doTransaction();
+		if(ret) {
+			setCanUndo(props.tps.hasTransactionToUndo());
+			setCanRedo(props.tps.hasTransactionToRedo());
+		}
 	}
-
 
 	const addItem = async () => {
 		let list = activeList;
@@ -82,7 +121,7 @@ const Homescreen = (props) => {
 			id: lastID ,
 			description: 'No Description',
 			due_date: 'No Date',
-			assigned_to: props.user._id,
+			assigned_to: 'No One',
 			completed: false
 		};
 		let opcode = 1;
@@ -90,8 +129,8 @@ const Homescreen = (props) => {
 		let listID = activeList._id;
 		let transaction = new UpdateListItems_Transaction(listID, itemID, newItem, opcode, AddTodoItem, DeleteTodoItem);
 		props.tps.addTransaction(transaction);
+		tpsRedo();
 	};
-
 
 	const deleteItem = async (item) => {
 		let listID = activeList._id;
@@ -107,6 +146,8 @@ const Homescreen = (props) => {
 		}
 		let transaction = new UpdateListItems_Transaction(listID, itemID, itemToDelete, opcode, AddTodoItem, DeleteTodoItem);
 		props.tps.addTransaction(transaction);
+		tpsRedo();
+
 	};
 
 	const editItem = async (itemID, field, value, prev) => {
@@ -115,6 +156,7 @@ const Homescreen = (props) => {
 		let listID = activeList._id;
 		let transaction = new EditItem_Transaction(listID, itemID, field, prev, value, flag, UpdateTodoItemField);
 		props.tps.addTransaction(transaction);
+		tpsRedo();
 
 	};
 
@@ -122,6 +164,7 @@ const Homescreen = (props) => {
 		let listID = activeList._id;
 		let transaction = new ReorderItems_Transaction(listID, itemID, dir, ReorderTodoItems);
 		props.tps.addTransaction(transaction);
+		tpsRedo();
 
 	};
 
@@ -136,7 +179,10 @@ const Homescreen = (props) => {
 			items: [],
 		}
 		const { data } = await AddTodolist({ variables: { todolist: list }, refetchQueries: [{ query: GET_DB_TODOS }] });
-		loadTodoList(list)
+		if(data) {
+			loadTodoList(data.addTodolist);
+		} 
+		
 	};
 
 	const deleteList = async (_id) => {
@@ -148,20 +194,15 @@ const Homescreen = (props) => {
 	const updateListField = async (_id, field, value, prev) => {
 		let transaction = new UpdateListField_Transaction(_id, field, prev, value, UpdateTodolistField);
 		props.tps.addTransaction(transaction);
+		tpsRedo();
 
 	};
 
-	const handleSetActive = (id) => {
-		const list = todolists.find(todo => todo.id === id || todo._id === id);
-		loadTodoList(list);
+	const handleSetActive = (_id) => {
+		const selectedList = todolists.find(todo => todo._id === _id);
+		loadTodoList(selectedList);
 	};
 
-	
-	/*
-		Since we only have 3 modals, this sort of hardcoding isnt an issue, if there
-		were more it would probably make sense to make a general modal component, and
-		a modal manager that handles which to show.
-	*/
 	const setShowLogin = () => {
 		toggleShowDelete(false);
 		toggleShowCreate(false);
@@ -179,7 +220,6 @@ const Homescreen = (props) => {
 		toggleShowLogin(false);
 		toggleShowDelete(!showDelete)
 	}
-
 	return (
 		<WLayout wLayout="header-lside">
 			<WLHeader>
@@ -204,9 +244,9 @@ const Homescreen = (props) => {
 					{
 						activeList ?
 							<SidebarContents
-								todolists={todolists} activeid={activeList.id} auth={auth}
+								listIDs={SidebarData} activeid={activeList._id} auth={auth}
 								handleSetActive={handleSetActive} createNewList={createNewList}
-								updateListField={updateListField}
+								updateListField={updateListField} key={activeList._id}
 							/>
 							:
 							<></>
@@ -216,12 +256,14 @@ const Homescreen = (props) => {
 			<WLMain>
 				{
 					activeList ? 
+					
 							<div className="container-secondary">
 								<MainContents
 									addItem={addItem} deleteItem={deleteItem}
 									editItem={editItem} reorderItem={reorderItem}
 									setShowDelete={setShowDelete} undo={tpsUndo} redo={tpsRedo}
 									activeList={activeList} setActiveList={loadTodoList}
+									canUndo={canUndo} canRedo={canRedo}
 								/>
 							</div>
 						:

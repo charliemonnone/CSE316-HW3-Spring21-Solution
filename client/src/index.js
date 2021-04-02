@@ -22,6 +22,15 @@ const cache = new InMemoryCache({
 				},
 			},
 		},
+		Query: {
+			fields: {
+				getAllTodos: {
+					merge(existing, incoming){
+						return incoming
+					}
+				}
+			}
+		}
 	},
 });
 
@@ -30,6 +39,7 @@ const BACKEND_LOCATION = 'http://localhost:4000/graphql';
 
 const client = new ApolloClient({
 	uri: BACKEND_LOCATION,
+	connectToDevTools: true,
 	// Credentials: include is necessary to pass along the auth cookies with each server request
 	credentials: 'include',
 	cache: cache,

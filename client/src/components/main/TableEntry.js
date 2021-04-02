@@ -3,18 +3,24 @@ import { WButton, WInput, WRow, WCol } from 'wt-frontend';
 
 const TableEntry = (props) => {
     const { data } = props;
+
     const completeStyle = data.completed ? ' complete-task' : ' incomplete-task';
     const assignedToStyle = data.completed ? 'complete-task-assignedTo' : 'incomplete-task-assignedTo';
-
 
     const description = data.description;
     const due_date = data.due_date;
     const status = data.completed ? 'complete' : 'incomplete';
     const assigned_to = data.assigned_to;
+
+    const canMoveUp = props.index > 0 ? true : false;
+    const canMoveDown = props.index < props.entryCount-1 ? true : false;
+    
     const [editingDate, toggleDateEdit] = useState(false);
     const [editingDescr, toggleDescrEdit] = useState(false);
     const [editingStatus, toggleStatusEdit] = useState(false);
     const [editingAssigned, toggleAssignEdit] = useState(false);
+
+    const disabledButton = () => {}
 
     const handleDateEdit = (e) => {
         toggleDateEdit(false);
@@ -60,10 +66,9 @@ const TableEntry = (props) => {
                     editingDescr || description === ''
                         ? <WInput
                             className='table-input' onBlur={handleDescrEdit}
-                            // TODO: check for enter
-                            // onKeyDown={handleDescrEdit}
+                            onKeyDown={(e) => {if(e.keyCode === 13) handleDescrEdit(e)}}
                             autoFocus={true} defaultValue={description} type='text'
-                            /*wType="outlined" barAnimation="solid" */ inputClass="table-input-class"
+                            inputClass="table-input-class"
                         />
                         : <div className="table-text"
                             onClick={() => toggleDescrEdit(!editingDescr)}
@@ -106,6 +111,8 @@ const TableEntry = (props) => {
                     editingAssigned || assigned_to === ''
                         ? <WInput
                             className='table-input' onBlur={handleAssignEdit}
+                            onKeyDown={(e) => {if(e.keyCode === 13) handleAssignEdit(e)}}
+
                             autoFocus={true} defaultValue={assigned_to} type='text'
                             /*wType="outlined" barAnimation="solid" */inputclass="table-input-class"
                         />
@@ -115,13 +122,12 @@ const TableEntry = (props) => {
                         </div>
                 }
             </WCol>
-
             <WCol size="3">
                 <div className='button-group'>
-                    <WButton className="table-entry-buttons" onClick={() => props.reorderItem(data._id, -1)} wType="texted">
+                    <WButton className={canMoveUp ? "table-entry-buttons" : "table-entry-buttons-disabled"} onClick={canMoveUp ? () => props.reorderItem(data._id, -1) : disabledButton } wType="texted">
                         <i className="material-icons">expand_less</i>
                     </WButton>
-                    <WButton className="table-entry-buttons" onClick={() => props.reorderItem(data._id, 1)} wType="texted">
+                    <WButton className={canMoveDown ? "table-entry-buttons" : "table-entry-buttons-disabled"} onClick={canMoveDown ? () => props.reorderItem(data._id, 1) : disabledButton } wType="texted">
                         <i className="material-icons">expand_more</i>
                     </WButton>
                     <WButton className="table-entry-buttons" onClick={() => props.deleteItem(data)} wType="texted">

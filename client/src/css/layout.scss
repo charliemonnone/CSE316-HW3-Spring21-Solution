@@ -31,6 +31,37 @@ html {
     padding: 12px 24px;
 }
 
+.list-item-active {
+    padding-left: 24px;
+    // transform: scale(1);
+    // transition: 0.3s padding-left ease-in-out;
+
+    // padding-left: 24px;
+
+
+//     padding-left: 24px;
+//   transition-property:  padding-left;
+//   transition-duration: 1s;
+}
+
+.list-item {
+    padding-left: inherit;
+    transform: scale(1);
+    transition: 0.1s padding-left ease-in-out;
+}
+
+.list-item:hover {
+    transform: scale(1);
+    transition: 0.1s padding-left ease-in-out;
+    padding-left: 24px;
+}
+
+
+.nothing-msg {
+    display: flex;
+    justify-content: space-evenly;
+}
+
 .table-text {
     white-space: nowrap;
     overflow: hidden;
@@ -92,9 +123,9 @@ html {
     // margin-right: 18px;
 }
 
-.table-entry {
-    //padding: 12px 24px;
-    //padding: 12px 0;
+.table-entry-buttons-disabled {
+    padding: 0;
+    margin-left: 36px;
 }
 
 .button-group {
@@ -124,6 +155,8 @@ html {
 .sidebar-buttons {
     padding: 0;
 }
+
+
 
 .modal-input {
     width: 100%;
