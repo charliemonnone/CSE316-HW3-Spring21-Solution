@@ -61,6 +61,7 @@ const Homescreen = (props) => {
 		}
 	}
 
+	// NOTE: might not need to be async
 	const reloadList = async () => {
 		if (activeList._id) {
 			let tempID = activeList._id;
@@ -94,8 +95,6 @@ const Homescreen = (props) => {
 
 	const auth = props.user === null ? false : true;
 	
-
-
 	const tpsUndo = async () => {
 		const ret = await props.tps.undoTransaction();
 		if(ret) {
@@ -132,7 +131,7 @@ const Homescreen = (props) => {
 		tpsRedo();
 	};
 
-	const deleteItem = async (item) => {
+	const deleteItem = async (item, index) => {
 		let listID = activeList._id;
 		let itemID = item._id;
 		let opcode = 0;
@@ -144,7 +143,7 @@ const Homescreen = (props) => {
 			assigned_to: item.assigned_to,
 			completed: item.completed
 		}
-		let transaction = new UpdateListItems_Transaction(listID, itemID, itemToDelete, opcode, AddTodoItem, DeleteTodoItem);
+		let transaction = new UpdateListItems_Transaction(listID, itemID, itemToDelete, opcode, AddTodoItem, DeleteTodoItem, index);
 		props.tps.addTransaction(transaction);
 		tpsRedo();
 
@@ -219,7 +218,8 @@ const Homescreen = (props) => {
 		toggleShowCreate(false);
 		toggleShowLogin(false);
 		toggleShowDelete(!showDelete)
-	}
+	};
+	
 	return (
 		<WLayout wLayout="header-lside">
 			<WLHeader>
