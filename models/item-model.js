@@ -6,10 +6,6 @@ const itemSchema = new Schema(
 			type: ObjectId,
 			required: true
 		},
-		id: {
-			type: Number,
-			required: true
-		},
 		description: {
 			type: String,
 			required: true

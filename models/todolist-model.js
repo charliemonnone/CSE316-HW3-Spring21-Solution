@@ -7,10 +7,7 @@ const todolistSchema = new Schema(
 			type: ObjectId,
 			required: true
 		},
-		id: {
-			type: Number,
-			required: true
-		},
+
 		name: {
 			type: String,
 			required: true
@@ -20,6 +17,14 @@ const todolistSchema = new Schema(
 			required: true
 		},
 		items: [Item],
+		sortRule: {
+			type: String, 
+			required: true
+		},
+		sortDirection: {
+			type: Number, 
+			required: true
+		}
 	},
 	{ timestamps: true }
 );
