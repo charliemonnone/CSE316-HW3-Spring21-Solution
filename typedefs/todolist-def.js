@@ -4,14 +4,14 @@ const { gql } = require('apollo-server');
 const typeDefs = gql `
 	type Todolist {
 		_id: String!
-		id: Int!
 		name: String!
 		owner: String!
 		items: [Item]
+		sortRule: String!
+		sortDirection: Int!
 	}
 	type Item {
 		_id: String!
-		id: Int!
 		description: String!
 		due_date: String!
 		assigned_to: String!
@@ -29,6 +29,7 @@ const typeDefs = gql `
 		updateTodolistField(_id: String!, field: String!, value: String!): String
 		updateItemField(itemId: String!, _id: String!, field: String!, value: String!, flag: Int!): [Item]
 		reorderItems(itemId: String!, _id: String!, direction: Int!): [Item]
+		sortItems(_id: String!, criteria: String!): [Item]
 	}
 	input FieldInput {
 		_id: String
@@ -37,14 +38,14 @@ const typeDefs = gql `
 	}
 	input TodoInput {
 		_id: String
-		id: Int
 		name: String
 		owner: String
 		items: [ItemInput]
+		sortRule: String
+		sortDirection: Int
 	}
 	input ItemInput {
 		_id: String
-		id: Int
 		description: String
 		due_date: String
 		assigned_to: String
