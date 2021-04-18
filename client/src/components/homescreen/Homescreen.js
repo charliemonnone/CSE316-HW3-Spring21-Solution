@@ -12,27 +12,31 @@ import { useMutation, useQuery } 		from '@apollo/client';
 import { WNavbar, WSidebar, WNavItem } 	from 'wt-frontend';
 import { WLayout, WLHeader, WLMain, WLSide } from 'wt-frontend';
 import { UpdateListField_Transaction, 
+	SortItems_Transaction,
 	UpdateListItems_Transaction, 
 	ReorderItems_Transaction, 
 	EditItem_Transaction } 				from '../../utils/jsTPS';
 
-
 const Homescreen = (props) => {
+
 	const keyCombination = (e, callback) => {
-		if(e.key == 'z' && e.ctrlKey) {
+		if(e.key === 'z' && e.ctrlKey) {
 			if(props.tps.hasTransactionToUndo()) {
 				tpsUndo();
 			}
 		}
-		else if (e.key == 'y' && e.ctrlKey) { 
+		else if (e.key === 'y' && e.ctrlKey) { 
 			if(props.tps.hasTransactionToRedo()) {
 				tpsRedo();
 			}
 		}
 	}
 	document.onkeydown = keyCombination;
+
+	const auth = props.user === null ? false : true;
 	let todolists 	= [];
 	let SidebarData = [];
+	const [sortRule, setSortRule] = useState('unsorted'); // 1 is ascending, -1 desc
 	const [activeList, setActiveList] 		= useState({});
 	const [showDelete, toggleShowDelete] 	= useState(false);
 	const [showLogin, toggleShowLogin] 		= useState(false);
@@ -57,10 +61,14 @@ const Homescreen = (props) => {
 		}
 		// create data for sidebar links
 		for(let todo of todolists) {
-			SidebarData.push({_id: todo._id, name: todo.name});
+			if(todo) {
+				SidebarData.push({_id: todo._id, name: todo.name});
+			}	
 		}
 	}
 
+
+	
 	// NOTE: might not need to be async
 	const reloadList = async () => {
 		if (activeList._id) {
@@ -85,15 +93,15 @@ const Homescreen = (props) => {
 	}
 
 	const [ReorderTodoItems] 		= useMutation(mutations.REORDER_ITEMS, mutationOptions);
+	const [sortTodoItems] 		= useMutation(mutations.SORT_ITEMS, mutationOptions);
 	const [UpdateTodoItemField] 	= useMutation(mutations.UPDATE_ITEM_FIELD, mutationOptions);
 	const [UpdateTodolistField] 	= useMutation(mutations.UPDATE_TODOLIST_FIELD, mutationOptions);
-	const [DeleteTodolist] 			= useMutation(mutations.DELETE_TODOLIST);
 	const [DeleteTodoItem] 			= useMutation(mutations.DELETE_ITEM, mutationOptions);
-	const [AddTodolist] 			= useMutation(mutations.ADD_TODOLIST);
 	const [AddTodoItem] 			= useMutation(mutations.ADD_ITEM, mutationOptions);
+	const [AddTodolist] 			= useMutation(mutations.ADD_TODOLIST);
+	const [DeleteTodolist] 			= useMutation(mutations.DELETE_TODOLIST);
 
 
-	const auth = props.user === null ? false : true;
 	
 	const tpsUndo = async () => {
 		const ret = await props.tps.undoTransaction();
@@ -114,10 +122,8 @@ const Homescreen = (props) => {
 	const addItem = async () => {
 		let list = activeList;
 		const items = list.items;
-		const lastID = items.length >= 1 ? items[items.length - 1].id + Math.floor(Math.random() * 1000) : 0;
 		const newItem = {
 			_id: '',
-			id: lastID ,
 			description: 'No Description',
 			due_date: 'No Date',
 			assigned_to: 'No One',
@@ -137,7 +143,6 @@ const Homescreen = (props) => {
 		let opcode = 0;
 		let itemToDelete = {
 			_id: item._id,
-			id: item.id,
 			description: item.description,
 			due_date: item.due_date,
 			assigned_to: item.assigned_to,
@@ -168,14 +173,13 @@ const Homescreen = (props) => {
 	};
 
 	const createNewList = async () => {
-		const length = todolists.length
-		const id = length >= 1 ? todolists[length - 1].id + Math.floor((Math.random() * 100) + 1) : 1;
 		let list = {
 			_id: '',
-			id: id,
 			name: 'Untitled',
 			owner: props.user._id,
 			items: [],
+			sortRule: 'task',
+			sortDirection: 1
 		}
 		const { data } = await AddTodolist({ variables: { todolist: list }, refetchQueries: [{ query: GET_DB_TODOS }] });
 		if(data) {
@@ -183,10 +187,8 @@ const Homescreen = (props) => {
 		} 
 		
 	};
-
 	const deleteList = async (_id) => {
 		DeleteTodolist({ variables: { _id: _id }, refetchQueries: [{ query: GET_DB_TODOS }] });
-		refetch();
 		loadTodoList({});
 	};
 
@@ -220,6 +222,16 @@ const Homescreen = (props) => {
 		toggleShowDelete(!showDelete)
 	};
 	
+	const sort = (criteria) => {
+		let prevSortRule = sortRule;
+		setSortRule(criteria);
+		let transaction = new SortItems_Transaction(activeList._id, criteria, prevSortRule, sortTodoItems);
+		console.log(transaction)
+		props.tps.addTransaction(transaction);
+		tpsRedo();
+		
+	}
+
 	return (
 		<WLayout wLayout="header-lside">
 			<WLHeader>
@@ -231,9 +243,9 @@ const Homescreen = (props) => {
 					</ul>
 					<ul>
 						<NavbarOptions
-							fetchUser={props.fetchUser} auth={auth} 
-							setShowCreate={setShowCreate} setShowLogin={setShowLogin}
-							reloadTodos={refetch} setActiveList={loadTodoList}
+							fetchUser={props.fetchUser} 	auth={auth} 
+							setShowCreate={setShowCreate} 	setShowLogin={setShowLogin}
+							reloadTodos={refetch} 			setActiveList={loadTodoList}
 						/>
 					</ul>
 				</WNavbar>
@@ -242,11 +254,11 @@ const Homescreen = (props) => {
 			<WLSide side="left">
 				<WSidebar>
 					{
-						activeList ?
+						activeList ? 
 							<SidebarContents
-								listIDs={SidebarData} activeid={activeList._id} auth={auth}
-								handleSetActive={handleSetActive} createNewList={createNewList}
-								updateListField={updateListField} key={activeList._id}
+								listIDs={SidebarData} 				activeid={activeList._id} auth={auth}
+								handleSetActive={handleSetActive} 	createNewList={createNewList}
+								updateListField={updateListField} 	key={activeList._id}
 							/>
 							:
 							<></>
@@ -259,11 +271,12 @@ const Homescreen = (props) => {
 					
 							<div className="container-secondary">
 								<MainContents
-									addItem={addItem} deleteItem={deleteItem}
-									editItem={editItem} reorderItem={reorderItem}
-									setShowDelete={setShowDelete} undo={tpsUndo} redo={tpsRedo}
-									activeList={activeList} setActiveList={loadTodoList}
-									canUndo={canUndo} canRedo={canRedo}
+									addItem={addItem} 				deleteItem={deleteItem}
+									editItem={editItem} 			reorderItem={reorderItem}
+									setShowDelete={setShowDelete} 	undo={tpsUndo} redo={tpsRedo}
+									activeList={activeList} 		setActiveList={loadTodoList}
+									canUndo={canUndo} 				canRedo={canRedo}
+									sort={sort}
 								/>
 							</div>
 						:

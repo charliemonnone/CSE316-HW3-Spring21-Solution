@@ -39,7 +39,6 @@ export const DELETE_ITEM = gql`
 	mutation DeleteItem($itemId: String!, $_id: String!) {
 		deleteItem(itemId: $itemId, _id: $_id) {
 			_id
-			id
 			description
 			due_date
 			assigned_to
@@ -52,7 +51,6 @@ export const UPDATE_ITEM_FIELD = gql`
 	mutation UpdateItemField($_id: String!, $itemId: String!, $field: String!, $value: String!, $flag: Int!) {
 		updateItemField(_id: $_id, itemId: $itemId, field: $field, value: $value, flag: $flag) {
 			_id
-			id
 			description
 			due_date
 			assigned_to
@@ -65,7 +63,18 @@ export const REORDER_ITEMS = gql`
 	mutation ReorderItems($_id: String!, $itemId: String!, $direction: Int!) {
 		reorderItems(_id: $_id, itemId: $itemId, direction: $direction) {
 			_id
-			id
+			description
+			due_date
+			assigned_to
+			completed
+		}
+	}
+`;
+
+export const SORT_ITEMS = gql`
+	mutation SortItems($_id: String!, $criteria: String!) {
+		sortItems(_id: $_id, criteria: $criteria) {
+			_id
 			description
 			due_date
 			assigned_to
@@ -78,17 +87,17 @@ export const ADD_TODOLIST = gql`
 	mutation AddTodolist($todolist: TodoInput!) {
 		addTodolist(todolist: $todolist) {
 			_id
-			id
 			name
 			owner
 			items {
 				_id
-				id
 				description
 				due_date
 				assigned_to
 				completed
 			}
+			sortRule
+			sortDirection
 		}
 	}
 `;
