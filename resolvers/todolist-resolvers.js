@@ -1,5 +1,6 @@
 const ObjectId = require('mongoose').Types.ObjectId;
 const Todolist = require('../models/todolist-model');
+const Sorting = require('../utils/sorting')
 
 // The underscore param, "_", is a wildcard that can represent any value;
 // here it is a stand-in for the parent parameter, which can be read about in
@@ -15,7 +16,9 @@ module.exports = {
 			const _id = new ObjectId(req.userId);
 			if(!_id) { return([])};
 			const todolists = await Todolist.find({owner: _id}).sort({updatedAt: 'descending'});
-			if(todolists) return (todolists);
+			if(todolists) {
+				return (todolists);
+			} 
 
 		},
 		/** 
@@ -59,17 +62,20 @@ module.exports = {
 		addTodolist: async (_, args) => {
 			const { todolist } = args;
 			const objectId = new ObjectId();
-			const { id, name, owner, items } = todolist;
+			const { id, name, owner, items , sortRule, sortDirection} = todolist;
 			const newList = new Todolist({
 				_id: objectId,
-				id: id,
 				name: name,
 				owner: owner,
-				items: items
+				items: items,
+				sortRule: sortRule,
+				sortDirection: sortDirection,
 			});
-			const updated = newList.save();
-			if(updated) return newList;
-			else return ('Could not add todolist');
+			const updated = await newList.save();
+			if(updated) {
+				console.log(newList)
+				return newList;
+			}
 		},
 		/** 
 		 	@param 	 {object} args - a todolist objectID and item objectID
@@ -164,6 +170,35 @@ module.exports = {
 			// return old ordering if reorder was unsuccessful
 			listItems = found.items;
 			return (found.items);
+
+		},
+
+		sortItems: async (_, args) => {
+			const { _id, criteria } = args;
+			const listId = new ObjectId(_id);
+			const found = await Todolist.findOne({_id: listId});
+			let newDirection = found.sortDirection === 1 ? -1 : 1; 
+			console.log(newDirection, found.sortDirection);
+			let sortedItems;
+
+			switch(criteria) {
+				case 'task':
+					sortedItems = Sorting.byTask(found.items, newDirection);
+					break;
+				case 'due_date':
+					sortedItems = Sorting.byDueDate(found.items, newDirection);
+					break;
+				case 'status':
+					sortedItems = Sorting.byStatus(found.items, newDirection);
+					break;
+				case 'assigned_to':
+					sortedItems = Sorting.byAssignedTo(found.items, newDirection);
+					break;
+				default:
+					return found.items;
+			}
+			const updated = await Todolist.updateOne({_id: listId}, { items: sortedItems, sortRule: criteria, sortDirection: newDirection })
+			if(updated) return (sortedItems);
 
 		}
 
